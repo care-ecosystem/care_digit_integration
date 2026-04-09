@@ -1,18 +1,11 @@
-from django.conf import settings
-from django.shortcuts import HttpResponse
-from django.urls import path
 from rest_framework.routers import DefaultRouter, SimpleRouter
 
-from care_digit_integration.api.viewsets import BaseViewSet
+from django.conf import settings
 
-
-def healthy(request):
-    return HttpResponse("OK")
-
+from care_digit_integration.api.viewsets.internal import InternalViewSet
 
 router = DefaultRouter() if settings.DEBUG else SimpleRouter()
-router.register(r"", BaseViewSet, basename="care_digit_integration-demo")
 
-urlpatterns = [
-    path("health", healthy),
-] + router.urls
+router.register("internal", InternalViewSet, basename="internal")
+
+urlpatterns = router.urls
