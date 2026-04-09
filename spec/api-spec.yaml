@@ -5,10 +5,17 @@ info:
   description: API specification for CARE ↔ DIGIT PGR complaint integration
 
 servers:
-  - url: /api/digit-integration/
+  - url: https://{host}/api/digit-integration
+    variables:
+      host:
+        default: dev.example.com
+        enum:
+          - dev.example.com
+          - uat.example.com
+          - prod.example.com
 
 paths:
-  /pgr/complaint:
+  /pgr/complaints:
     post:
       summary: Create Complaint
       operationId: createComplaint
@@ -82,7 +89,7 @@ paths:
                 $ref: '#/components/schemas/ComplaintListResponse'
 
 
-  /pgr/service-codes/:
+  /internal/service-codes:
     get:
       summary: List Service Codes
       operationId: listServiceCodes
@@ -104,9 +111,73 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServiceCodeListResponse'
 
+  /proxy/filestore/files:
+    post:
+      summary: Upload file to Filestore (Proxy)
+      description: Proxies file upload request to external DIGIT Filestore service
+      operationId: uploadFileToFilestore
+
+      parameters:
+        - in: header
+          name: auth-token
+          required: true
+          schema:
+            type: string
+          description: Authentication token for external service
+
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - tenantId
+                - module
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File to upload
+                tenantId:
+                  type: string
+                  example: mz
+                module:
+                  type: string
+                  example: HCM
+
+      responses:
+        '200':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FilestoreResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+
+
 components:
   schemas:
-
+    FilestoreResponse:
+      type: object
+      properties:
+        files:
+          type: array
+          items:
+            type: object
+            properties:
+              fileStoreId:
+                type: string
+                example: 6fdbfac3-7861-406c-a063-457adaef097d
+              tenantId:
+                type: string
+                example: mz
+                
     CreateComplaintRequest:
       type: object
       required:
