@@ -98,11 +98,24 @@ class PluginSettings:  # pragma: no cover
 
 
 REQUIRED_SETTINGS = {
-    "CARE_DIGIT_INTEGRATION_CONFIG",
+    "HOST",
+    "DIGIT_TOKEN_ENDPOINT",
+    "PGR_CREATE_ENDPOINT"
+    "USERNAME",
+    "PASSWORD",
+    "USER_TYPE",
+    "GRANT_TYPE",
 }
 
 DEFAULTS = {
-    "CARE_DIGIT_INTEGRATION_OPTIONAL_CONFIG": "test",
+    "HOST": "https://health-demo.digit.org",
+    "DIGIT_TOKEN_ENDPOINT": "",
+    "PGR_CREATE_ENDPOINT": "",
+    "USERNAME": "",
+    "PASSWORD": "",
+    "USER_TYPE": "",
+    "GRANT_TYPE": "password",
+    "TOKEN_EXPIRY": 3600
 }
 
 plugin_settings = PluginSettings(
