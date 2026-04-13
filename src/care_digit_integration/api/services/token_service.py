@@ -1,19 +1,36 @@
 from django.core.cache import cache
 
-import logging
 import requests
 import time
 from urllib.parse import urlencode, urljoin
 
 from care_digit_integration.settings import plugin_settings as settings
 
-logger = logging.getLogger(__name__)
-
 
 class TokenService:
 
     def _get_cache_key(self, tenant_id):
-        return f"access_token:{tenant_id}"
+        return f"digit:access_token:{tenant_id}"
+
+
+
+    def _cache_data(self, cache_key, token_response):
+        token = token_response.get("access_token")
+        user_info = token_response.get("UserRequest")
+
+        if not token:
+            raise Exception("Access token missing in response")
+
+        data = {
+            "access_token": token,
+            "user_info": user_info
+        }
+
+        cache.set(
+            cache_key,
+            data,
+            timeout=max(settings.TOKEN_EXPIRY - 60, 1)
+        )
 
 
 
@@ -22,7 +39,7 @@ class TokenService:
 
         headers = {
             'accept': 'application/json, text/plain, */*',
-            'authorization': 'Basic ZWdvdi11c2VyLWNsaWVudDo=',
+            'authorization': f'Basic {settings.DIGIT_HEADER_AUTH_TOKEN}',
             'content-type': 'application/x-www-form-urlencoded'
         }
 
@@ -35,52 +52,61 @@ class TokenService:
             "userType": settings.USER_TYPE,
         })
 
-        response = requests.post(url=url, headers=headers, data=payload, timeout=10)
+        response = requests.post(url=url, headers=headers, data=payload, timeout=settings.REQUEST_TIMEOUT)
 
         if response.status_code != 200:
-            raise Exception(f"Token API failed: {response.text}")
+            raise Exception(f"Token API failed with status {response.status_code}")
 
-        return response.json().get("access_token")
+        return response.json()
 
 
 
     def get_token(self, tenant_id):
         cache_key = self._get_cache_key(tenant_id)
 
-        token = cache.get(cache_key)
-        if token:
-            return token
+        data = cache.get(cache_key)
+        if data:
+            return data.get("access_token")
 
         lock_key = f"lock:{cache_key}"
 
-        if cache.add(lock_key, "1", timeout=10):
+        if cache.add(lock_key, "1", timeout=settings.REQUEST_TIMEOUT):
             try:
-                token = self._fetch_token(tenant_id)
+                response = self._fetch_token(tenant_id)
 
-                cache.set(
-                    cache_key,
-                    token,
-                    timeout=settings.TOKEN_EXPIRY - 60
+                self._cache_data(
+                    cache_key=cache_key,
+                    token_response=response
                 )
 
-                return token
+                return response.get("access_token")
 
             finally:
                 cache.delete(lock_key)
 
 
         for _ in range(5):
-            token = cache.get(cache_key)
-            if token:
-                return token
+            data = cache.get(cache_key)
+            if data:
+                return data.get("access_token")
             time.sleep(0.2)
 
-        token = self._fetch_token(tenant_id)
+        response = self._fetch_token(tenant_id)
 
-        cache.set(
-            cache_key,
-            token,
-            timeout=settings.TOKEN_EXPIRY - 60
+        self._cache_data(
+            cache_key=cache_key,
+            token_response=response
         )
 
-        return token
+        return response.get("access_token")
+
+
+
+    def get_user_info(self, tenant_id):
+        cache_key = self._get_cache_key(tenant_id)
+        data = cache.get(cache_key)
+
+        if data:
+            return data.get("user_info")
+
+        raise Exception("DIGIT user information not found")

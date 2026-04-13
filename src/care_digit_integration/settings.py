@@ -100,22 +100,22 @@ class PluginSettings:  # pragma: no cover
 REQUIRED_SETTINGS = {
     "HOST",
     "DIGIT_TOKEN_ENDPOINT",
-    "PGR_CREATE_ENDPOINT"
-    "USERNAME",
-    "PASSWORD",
-    "USER_TYPE",
+    "DIGIT_HEADER_AUTH_TOKEN",
+    "PGR_CREATE_ENDPOINT",
     "GRANT_TYPE",
 }
 
 DEFAULTS = {
-    "HOST": "https://health-demo.digit.org",
+    "HOST": "",
     "DIGIT_TOKEN_ENDPOINT": "",
+    "DIGIT_HEADER_AUTH_TOKEN": "",
     "PGR_CREATE_ENDPOINT": "",
+    "GRANT_TYPE": "password",
+    "USER_TYPE": "EMPLOYEE",
+    "TOKEN_EXPIRY": 3600,
+    "REQUEST_TIMEOUT": 10,
     "USERNAME": "",
     "PASSWORD": "",
-    "USER_TYPE": "",
-    "GRANT_TYPE": "password",
-    "TOKEN_EXPIRY": 3600
 }
 
 plugin_settings = PluginSettings(
