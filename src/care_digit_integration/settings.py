@@ -103,6 +103,8 @@ REQUIRED_SETTINGS = {
     "DIGIT_HEADER_AUTH_TOKEN",
     "PGR_CREATE_ENDPOINT",
     "GRANT_TYPE",
+    "LOCALITY_CODE",
+    "USER_INFO"
 }
 
 DEFAULTS = {
@@ -116,6 +118,19 @@ DEFAULTS = {
     "REQUEST_TIMEOUT": 10,
     "USERNAME": "",
     "PASSWORD": "",
+    "LOCALITY_CODE": "MICROPLAN_MO",
+    "USER_INFO": {
+        "userName": "9689999992",
+        "name": "Jagan",
+        "type": "EMPLOYEE",
+        "mobileNumber": "9689999992",
+        "roles": [],
+        "tenantId": "mz",
+        "uuid": "1c69d641-db27-4fc9-9e56-d2fbe5590bf5",
+        "active": True,
+        "isDeleted": False,
+        "rowVersion": 1
+    }
 }
 
 plugin_settings = PluginSettings(

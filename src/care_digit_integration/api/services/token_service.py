@@ -52,7 +52,12 @@ class TokenService:
             "userType": settings.USER_TYPE,
         })
 
-        response = requests.post(url=url, headers=headers, data=payload, timeout=settings.REQUEST_TIMEOUT)
+        response = requests.post(
+            url=url,
+            headers=headers,
+            data=payload,
+            timeout=settings.REQUEST_TIMEOUT
+        )
 
         if response.status_code != 200:
             raise Exception(f"Token API failed with status {response.status_code}")

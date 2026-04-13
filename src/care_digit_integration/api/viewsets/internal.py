@@ -7,40 +7,51 @@ from rest_framework.viewsets import GenericViewSet
 from care.facility.models.facility import Facility
 from care.utils.shortcuts import get_object_or_404
 
-from care_digit_integration.api.serializers import ServiceCodesSerializer
+from care_digit_integration.api.serializers import ServiceCodesSerializer, DigitComplaintTypesCreateSerializer
 from care_digit_integration.models.digit_complaint_types import DigitComplaintTypes
 
 class InternalViewSet(GenericViewSet):
     permission_classes = [IsAuthenticated]
 
-    @action(detail=False, methods=["get"], url_path="service-codes")
+    @action(detail=False, methods=["get", "post"], url_path="service-codes")
     def service_codes(self, request):
-        facility_id = request.query_params.get('facility_id')
-        workflow = request.query_params.get('workflow')
+        if request.method == "GET":
+            facility_id = request.query_params.get('facility_id')
+            workflow = request.query_params.get('workflow')
 
-        if not facility_id:
-            return Response(
-                {"error": "facility_id is required"},
-                status=status.HTTP_400_BAD_REQUEST
+            if not facility_id:
+                return Response(
+                    {"error": "facility_id is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if not workflow:
+                return Response(
+                    {"error": "workflow is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            facility = get_object_or_404(
+                Facility,
+                external_id=facility_id
             )
 
-        if not workflow:
-            return Response(
-                {"error": "workflow is required"},
-                status=status.HTTP_400_BAD_REQUEST
+            complaint_types = get_object_or_404(
+                DigitComplaintTypes,
+                facility=facility,
+                workflow=workflow,
+                status=DigitComplaintTypes.StatusTypes.ACTIVE
             )
 
-        facility = get_object_or_404(
-            Facility,
-            external_id=facility_id
-        )
+            serializer = ServiceCodesSerializer(complaint_types)
+            return Response(serializer.data)
 
-        complaint_types = get_object_or_404(
-            DigitComplaintTypes,
-            facility=facility,
-            workflow=workflow,
-            status=DigitComplaintTypes.StatusTypes.ACTIVE
-        )
+        else:
+            serializer = DigitComplaintTypesCreateSerializer(data=request.data)
 
-        serializer = ServiceCodesSerializer(complaint_types)
-        return Response(serializer.data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=400)
+
+            serializer.save()
+
+            return Response(serializer.data, status=201)
