@@ -103,9 +103,11 @@ REQUIRED_SETTINGS = {
     "DIGIT_HEADER_AUTH_TOKEN",
     "PGR_CREATE_ENDPOINT",
     "PGR_FETCH_ENDPOINT",
+    "FILESTORE_UPLOAD_ENDPOINT",
     "GRANT_TYPE",
     "LOCALITY_CODE",
-    "USER_INFO"
+    "USER_INFO",
+    "MODULE_NAME"
 }
 
 DEFAULTS = {
@@ -114,6 +116,7 @@ DEFAULTS = {
     "DIGIT_HEADER_AUTH_TOKEN": "",
     "PGR_CREATE_ENDPOINT": "",
     "PGR_FETCH_ENDPOINT": "",
+    "FILESTORE_UPLOAD_ENDPOINT": "",
     "GRANT_TYPE": "password",
     "USER_TYPE": "EMPLOYEE",
     "TOKEN_EXPIRY": 3600,
@@ -132,7 +135,9 @@ DEFAULTS = {
         "ACTIVE": True,
         "IS_DELETED": False,
         "ROW_VERSION": 1
-    }
+    },
+    "PGR_CREATE_APPLICATION_STATUS": "CREATED",
+    "MODULE_NAME": "property-upload" #"care-pgr"
 }
 
 plugin_settings = PluginSettings(

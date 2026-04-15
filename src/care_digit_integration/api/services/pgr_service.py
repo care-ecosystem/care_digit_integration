@@ -34,10 +34,32 @@ class PGRService:
 
 
 
-    def _build_create_payload(self, *, tenant_id, service_code, description):
+    def _build_create_payload(
+        self, *,
+        tenant_id,
+        service_code,
+        description,
+        filestore_uploads=[],
+        source=None
+    ):
         access_token = self.token_service.get_token(tenant_id=tenant_id)
         user_info = settings.USER_INFO
         timestamp = int(time.time())
+
+        audit_details = {
+            "createdBy": user_info["UUID"],
+            "createdTime": timestamp,
+            "lastModifiedBy": user_info["UUID"],
+            "lastModifiedTime": timestamp
+        }
+
+        verfication_documents = []
+        for upload in filestore_uploads:
+            verfication_documents.append({
+                "fileStoreId": upload["fileStoreId"],
+                "tenantId": upload["tenantId"],
+                "auditDetails": audit_details
+            })
 
         payload = {
             "service": {
@@ -45,8 +67,8 @@ class PGRService:
                 "tenantId": tenant_id,
                 "serviceCode": service_code,
                 "description": description,
-                "applicationStatus": "CREATED",
-                "source": "web",
+                "applicationStatus": settings.PGR_CREATE_APPLICATION_STATUS,
+                "source": source,
                 "user": {
                     "userName": user_info["USER_NAME"],
                     "name": user_info["NAME"],
@@ -58,12 +80,7 @@ class PGRService:
                     "active": user_info["ACTIVE"],
                     "isDeleted": user_info["IS_DELETED"],
                     "rowVersion": user_info["ROW_VERSION"],
-                    "auditDetails": {
-                        "createdBy": user_info["UUID"],
-                        "createdTime": timestamp,
-                        "lastModifiedBy": user_info["UUID"],
-                        "lastModifiedTime": timestamp
-                    }
+                    "auditDetails": audit_details
                 },
                 "isDeleted": False,
                 "rowVersion": 1,
@@ -81,18 +98,14 @@ class PGRService:
                     "supervisorName": user_info["NAME"],
                     "supervisorMobileNumber": ""
                 },
-                "auditDetails": {
-                    "createdBy": user_info["UUID"],
-                    "createdTime": timestamp,
-                    "lastModifiedBy": user_info["UUID"],
-                    "lastModifiedTime": timestamp
-                }
+                "auditDetails": audit_details
             },
             "workflow": {
                 "action": "CREATE",
                 "assignes": [],
                 "hrmsAssignes": [],
-                "comments": ""
+                "comments": "",
+                "verificationDocuments": verfication_documents
             },
             "RequestInfo": {
                 "apiId": "Rainmaker",
@@ -105,7 +118,15 @@ class PGRService:
 
 
 
-    def create_complaint(self, facility_id, workflow, service_code, description):
+    def create_complaint(
+        self,
+        facility_id,
+        workflow,
+        service_code,
+        description,
+        filestore_uploads=[],
+        source=None
+    ):
         try:
             tenant_id = self._get_tenant_id(facility_id, workflow)
 
@@ -121,7 +142,9 @@ class PGRService:
             payload = self._build_create_payload(
                 tenant_id=tenant_id,
                 service_code=service_code,
-                description=description
+                description=description,
+                source=source,
+                filestore_uploads=filestore_uploads
             )
 
             response = requests.post(

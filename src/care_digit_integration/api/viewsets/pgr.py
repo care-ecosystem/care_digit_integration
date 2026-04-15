@@ -1,18 +1,20 @@
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
 
-import logging
+# import logging
 
 from care.facility.models.facility import Facility
 from care.utils.shortcuts import get_object_or_404
 
 from care_digit_integration.api.serializers import PGRComplaintsCreateSerializer, PGRComplaintRetrieveSerializer
 from care_digit_integration.models.pgr_complaints import PGRComplaints
-from care_digit_integration.api.services.token_service import TokenService
 from care_digit_integration.api.services.pgr_service import PGRService
 
+
+# logger = logging.getLogger(__name__)
 
 
 class PGRViewSet(ModelViewSet):
@@ -28,7 +30,10 @@ class PGRViewSet(ModelViewSet):
         workflow = data.get("workflow")
         service_code = data.get("service_code")
         app_context = data.get("app_context")
+
         description = data.get("description")
+        filestore_uploads = data.get("filestore_uploads", [])
+        source = data.get("source")
 
         serializer = PGRComplaintsCreateSerializer(data={
             "facility": facility.id,
@@ -50,7 +55,9 @@ class PGRViewSet(ModelViewSet):
                 facility_id=facility_id,
                 workflow=workflow,
                 service_code=service_code,
-                description=description
+                description=description,
+                filestore_uploads=filestore_uploads,
+                source=source
             )
 
             instance.pgr_response = response
@@ -75,3 +82,35 @@ class PGRViewSet(ModelViewSet):
             PGRComplaintRetrieveSerializer(instance).data,
             status=status.HTTP_201_CREATED
         )
+
+
+    @action(detail=True, methods=["get"])
+    def check_status(self, request, *args, **kwargs):
+        instance = get_object_or_404(PGRComplaints, pgr_ticket_id=kwargs.get("pk"))
+
+        pgr_service = PGRService()
+
+        try:
+            # logger.info(f"Fetching complaint status for ticket id {kwargs.get('pk')} from PGR system")
+
+            response = pgr_service.fetch_complaint(
+                pgr_ticket_id=kwargs.get('pk'),
+                facility_id=instance.facility.external_id,
+                workflow=instance.workflow
+            )
+
+            # logger.info(f"Fetched complaint status for ticket id {kwargs.get('pk')} from PGR system")
+            # logger.info(f"Response: {response}")
+
+        except Exception as e:
+            # logger.error(f"Failed to fetch complaint status for ticket id {kwargs.get("pk")}")
+
+            return Response(
+                {"detail": "Failed to fetch complaint status from PGR system"},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        finally:
+            return Response(
+                response,
+            )
