@@ -1,5 +1,6 @@
 from urllib.parse import urljoin
 import logging
+import time
 
 import requests
 
@@ -21,8 +22,6 @@ class PGRService:
 
 
     def _get_tenant_id(self, facility_id, workflow):
-        logger.info("Fetching tenant_id")
-
         facility = get_object_or_404(Facility, external_id=facility_id)
 
         digit_complaint_type = get_object_or_404(
@@ -31,16 +30,16 @@ class PGRService:
             workflow=workflow
         )
 
-        logger.info(f"Fetched tenant_id: {digit_complaint_type.tenant_id}")
-
         return digit_complaint_type.tenant_id
 
 
 
-    def _build_payload(self, *, tenant_id, service_code, description):
+    def _build_create_payload(self, *, tenant_id, service_code, description):
         access_token = self.token_service.get_token(tenant_id=tenant_id)
+        user_info = settings.USER_INFO
+        timestamp = int(time.time())
 
-        return {
+        payload = {
             "service": {
                 "active": True,
                 "tenantId": tenant_id,
@@ -48,7 +47,24 @@ class PGRService:
                 "description": description,
                 "applicationStatus": "CREATED",
                 "source": "web",
-                "user": settings.USER_INFO,
+                "user": {
+                    "userName": user_info["USER_NAME"],
+                    "name": user_info["NAME"],
+                    "type": user_info["TYPE"],
+                    "mobileNumber": user_info["MOBILE_NUMBER"],
+                    "roles": user_info["ROLES"],
+                    "tenantId": user_info["TENANT_ID"],
+                    "uuid": user_info["UUID"],
+                    "active": user_info["ACTIVE"],
+                    "isDeleted": user_info["IS_DELETED"],
+                    "rowVersion": user_info["ROW_VERSION"],
+                    "auditDetails": {
+                        "createdBy": user_info["UUID"],
+                        "createdTime": timestamp,
+                        "lastModifiedBy": user_info["UUID"],
+                        "lastModifiedTime": timestamp
+                    }
+                },
                 "isDeleted": False,
                 "rowVersion": 1,
                 "address": {
@@ -62,8 +78,14 @@ class PGRService:
                     "geoLocation": {}
                 },
                 "additionalDetail": {
-                    "supervisorName": "Jagan",
+                    "supervisorName": user_info["NAME"],
                     "supervisorMobileNumber": ""
+                },
+                "auditDetails": {
+                    "createdBy": user_info["UUID"],
+                    "createdTime": timestamp,
+                    "lastModifiedBy": user_info["UUID"],
+                    "lastModifiedTime": timestamp
                 }
             },
             "workflow": {
@@ -77,6 +99,8 @@ class PGRService:
                 "authToken": access_token
             }
         }
+
+        return payload
 
 
 
@@ -94,11 +118,56 @@ class PGRService:
                 'content-type': 'application/json;charset=UTF-8'
             }
 
-            payload = self._build_payload(
+            payload = self._build_create_payload(
                 tenant_id=tenant_id,
                 service_code=service_code,
                 description=description
             )
+
+            response = requests.post(
+                url=url,
+                params=params,
+                headers=headers,
+                json=payload,
+                timeout=settings.REQUEST_TIMEOUT
+            )
+
+            response.raise_for_status()
+
+            return response.json()
+
+        except Exception as e:
+            logger.error(f"Status: {response.status_code}")
+            logger.error(f"Response: {response.text}")
+            raise
+
+
+
+
+    def fetch_complaint(self, *, pgr_ticket_id, facility_id, workflow):
+        try:
+            tenant_id = self._get_tenant_id(facility_id, workflow)
+
+            url = urljoin(settings.HOST, settings.PGR_FETCH_ENDPOINT)
+
+            params = {
+                "tenantId": tenant_id,
+                "serviceRequestId": pgr_ticket_id
+            }
+
+            headers = {
+                'accept': 'application/json, text/plain, */*',
+                'content-type': 'application/json;charset=UTF-8'
+            }
+
+            access_token = self.token_service.get_token(tenant_id=tenant_id)
+
+            payload = {
+                "RequestInfo": {
+                    "apiId": "Rainmaker",
+                    "authToken": access_token
+                }
+            }
 
             response = requests.post(
                 url=url,

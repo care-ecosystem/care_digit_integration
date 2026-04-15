@@ -102,6 +102,7 @@ REQUIRED_SETTINGS = {
     "DIGIT_TOKEN_ENDPOINT",
     "DIGIT_HEADER_AUTH_TOKEN",
     "PGR_CREATE_ENDPOINT",
+    "PGR_FETCH_ENDPOINT",
     "GRANT_TYPE",
     "LOCALITY_CODE",
     "USER_INFO"
@@ -112,6 +113,7 @@ DEFAULTS = {
     "DIGIT_TOKEN_ENDPOINT": "",
     "DIGIT_HEADER_AUTH_TOKEN": "",
     "PGR_CREATE_ENDPOINT": "",
+    "PGR_FETCH_ENDPOINT": "",
     "GRANT_TYPE": "password",
     "USER_TYPE": "EMPLOYEE",
     "TOKEN_EXPIRY": 3600,
@@ -120,16 +122,16 @@ DEFAULTS = {
     "PASSWORD": "",
     "LOCALITY_CODE": "MICROPLAN_MO",
     "USER_INFO": {
-        "userName": "9689999992",
-        "name": "Jagan",
-        "type": "EMPLOYEE",
-        "mobileNumber": "9689999992",
-        "roles": [],
-        "tenantId": "mz",
-        "uuid": "1c69d641-db27-4fc9-9e56-d2fbe5590bf5",
-        "active": True,
-        "isDeleted": False,
-        "rowVersion": 1
+        "USER_NAME": "9689999992",
+        "NAME": "Jagan",
+        "TYPE": "EMPLOYEE",
+        "MOBILE_NUMBER": "9689999992",
+        "ROLES": [],
+        "TENANT_ID": "mz",
+        "UUID": "1c69d641-db27-4fc9-9e56-d2fbe5590bf5",
+        "ACTIVE": True,
+        "IS_DELETED": False,
+        "ROW_VERSION": 1
     }
 }
 
