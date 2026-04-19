@@ -1,3 +1,5 @@
+from urllib3 import request
+
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -9,8 +11,20 @@ from care.utils.shortcuts import get_object_or_404
 
 from care_digit_integration.api.serializers import ServiceCodesSerializer, DigitComplaintTypesCreateSerializer
 from care_digit_integration.models.digit_complaint_types import DigitComplaintTypes
+from rest_framework.permissions import IsAuthenticated
+
+# )
+from care_digit_integration.api.authentication import HybridAuthentication
+from rest_framework.authentication import SessionAuthentication
+
 
 class InternalViewSet(GenericViewSet):
+
+    authentication_classes = [
+        HybridAuthentication,
+        SessionAuthentication,
+    ]
+
     permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=["get", "post"], url_path="service-codes")

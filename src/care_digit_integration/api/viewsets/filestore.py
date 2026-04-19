@@ -8,12 +8,20 @@ from rest_framework.viewsets import GenericViewSet
 
 from care_digit_integration.settings import plugin_settings as settings
 from care_digit_integration.api.services.filestore_service import FileStoreService
+from rest_framework.permissions import IsAuthenticated
+from care_digit_integration.api.authentication import HybridAuthentication
+from rest_framework.authentication import SessionAuthentication
 
 
 # logger = logging.getLogger(__name__)
 
 
 class FileStoreViewSet(GenericViewSet):
+    authentication_classes = [
+        HybridAuthentication,
+        SessionAuthentication,
+    ]
+
     permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=["post"])

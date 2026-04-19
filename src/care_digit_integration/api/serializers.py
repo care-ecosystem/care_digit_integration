@@ -49,7 +49,8 @@ class PGRComplaintsCreateSerializer(serializers.ModelSerializer):
             "app_context",
             "service_code",
             "workflow",
-            "reporter"
+            "reporter",
+            "reporter_type"
         ]
 
 class PGRComplaintRetrieveSerializer(serializers.ModelSerializer):
