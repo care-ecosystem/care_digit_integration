@@ -15,14 +15,12 @@ from rest_framework.permissions import IsAuthenticated
 
 # )
 from care_digit_integration.api.authentication import HybridAuthentication
-from rest_framework.authentication import SessionAuthentication
 
 
 class InternalViewSet(GenericViewSet):
 
     authentication_classes = [
         HybridAuthentication,
-        SessionAuthentication,
     ]
 
     permission_classes = [IsAuthenticated]
