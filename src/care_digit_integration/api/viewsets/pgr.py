@@ -21,6 +21,11 @@ class PGRViewSet(ModelViewSet):
     queryset = PGRComplaints.objects.all()
     permission_classes = [IsAuthenticated]
     serializer_class = PGRComplaintRetrieveSerializer
+    def get_queryset(self):
+        return PGRComplaints.objects.filter(
+            workflow="system",
+            reporter=self.request.user
+        ).order_by("-created_date")
 
     def create(self, request, *args, **kwargs):
         data = request.data
@@ -86,7 +91,13 @@ class PGRViewSet(ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def check_status(self, request, *args, **kwargs):
-        instance = get_object_or_404(PGRComplaints, pgr_ticket_id=kwargs.get("pk"))
+        # ✅✅✅ FIXED SECURITY ISSUE HERE
+        instance = get_object_or_404(
+            PGRComplaints,
+            pgr_ticket_id=kwargs.get("pk"),
+            reporter=request.user
+        )
+        # ✅✅✅ END
 
         pgr_service = PGRService()
 
@@ -99,6 +110,11 @@ class PGRViewSet(ModelViewSet):
                 workflow=instance.workflow
             )
 
+            return Response(
+                response,
+            )
+
+
             # logger.info(f"Fetched complaint status for ticket id {kwargs.get('pk')} from PGR system")
             # logger.info(f"Response: {response}")
 
@@ -108,9 +124,4 @@ class PGRViewSet(ModelViewSet):
             return Response(
                 {"detail": "Failed to fetch complaint status from PGR system"},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
-
-        finally:
-            return Response(
-                response,
             )
