@@ -8,9 +8,10 @@ from django.dispatch import receiver
 from rest_framework.settings import perform_import
 
 from care_digit_integration.apps import PLUGIN_NAME
+from django.conf import settings
+
 
 env = environ.Env()
-
 
 class PluginSettings:  # pragma: no cover
     """
