@@ -3,8 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.exceptions import ValidationError, NotFound, APIException
+from rest_framework.exceptions import ValidationError, NotFound
 
 from care.facility.models.facility import Facility
 from care.utils.shortcuts import get_object_or_404
@@ -23,11 +22,11 @@ class PGRViewSet(ModelViewSet):
 
     permission_classes = [IsAuthenticated]
     serializer_class = PGRComplaintRetrieveSerializer
-    def get_queryset(self):
-        return PGRComplaints.objects.filter(
-            workflow="system",
-            reporter=self.request.user
-        ).order_by("-created_date")
+    # def get_queryset(self):
+    #     return PGRComplaints.objects.filter(
+    #         workflow="system",
+    #         reporter=self.request.user
+    #     ).order_by("-created_date")
 
     def _get_reporter_details(self, request):
         user = request.user
