@@ -23,6 +23,11 @@ class PGRViewSet(ModelViewSet):
 
     permission_classes = [IsAuthenticated]
     serializer_class = PGRComplaintRetrieveSerializer
+    def get_queryset(self):
+        return PGRComplaints.objects.filter(
+            workflow="system",
+            reporter=self.request.user
+        ).order_by("-created_date")
 
     def _get_reporter_details(self, request):
         user = request.user
@@ -164,4 +169,3 @@ class PGRViewSet(ModelViewSet):
                 {"detail": "Failed to fetch complaint status from PGR system"},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
-
