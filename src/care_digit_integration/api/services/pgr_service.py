@@ -43,13 +43,16 @@ class PGRService:
         source=None
     ):
         access_token = self.token_service.get_token(tenant_id=tenant_id)
-        user_info = settings.USER_INFO
+        # user_info = settings.USER_INFO
+        user_info = self.token_service.get_user_info(tenant_id=tenant_id)
         timestamp = int(time.time())
 
         audit_details = {
-            "createdBy": user_info["UUID"],
+            # "createdBy": user_info["UUID"],
+            "createdBy": user_info["uuid"],
             "createdTime": timestamp,
-            "lastModifiedBy": user_info["UUID"],
+            # "lastModifiedBy": user_info["UUID"],
+            "lastModifiedBy": user_info["uuid"],
             "lastModifiedTime": timestamp
         }
 
@@ -68,18 +71,28 @@ class PGRService:
                 "serviceCode": service_code,
                 "description": description,
                 "applicationStatus": settings.PGR_CREATE_APPLICATION_STATUS,
-                "source": source,
+                "source": source or "web",
                 "user": {
-                    "userName": user_info["USER_NAME"],
-                    "name": user_info["NAME"],
-                    "type": user_info["TYPE"],
-                    "mobileNumber": user_info["MOBILE_NUMBER"],
-                    "roles": user_info["ROLES"],
-                    "tenantId": user_info["TENANT_ID"],
-                    "uuid": user_info["UUID"],
-                    "active": user_info["ACTIVE"],
-                    "isDeleted": user_info["IS_DELETED"],
-                    "rowVersion": user_info["ROW_VERSION"],
+                    # "userName": user_info["USER_NAME"],
+                    "userName": user_info["userName"],
+                    # "name": user_info["NAME"],
+                    "name": user_info["name"],
+                    # "type": user_info["TYPE"],
+                    "type": user_info["type"],
+                    # "mobileNumber": user_info["MOBILE_NUMBER"],
+                    "mobileNumber": user_info["mobileNumber"],
+                    # "roles": user_info["ROLES"],
+                    "roles": user_info["roles"],
+                    # "tenantId": user_info["TENANT_ID"],
+                    "tenantId": user_info["tenantId"],
+                    # "uuid": user_info["UUID"],
+                    "uuid": user_info["uuid"],
+                    # "active": user_info["ACTIVE"],
+                    "active": user_info["active"],
+                    # "isDeleted": user_info["IS_DELETED"],
+                    "isDeleted": False,
+                    # "rowVersion": user_info["ROW_VERSION"],
+                    "rowVersion": 1,
                     "auditDetails": audit_details
                 },
                 "isDeleted": False,
@@ -95,13 +108,16 @@ class PGRService:
                     "geoLocation": {}
                 },
                 "additionalDetail": {
-                    "supervisorName": user_info["NAME"],
-                    "supervisorMobileNumber": ""
+                    # "supervisorName": user_info["NAME"],
+                    "supervisorName": user_info["name"],
+                    # "supervisorMobileNumber": ""
+                    "supervisorMobileNumber": user_info["mobileNumber"]
                 },
                 "auditDetails": audit_details
             },
             "workflow": {
-                "action": "CREATE",
+                # "action": "CREATE",
+                "action": "APPLY",
                 "assignes": [],
                 "hrmsAssignes": [],
                 "comments": "",
@@ -147,6 +163,8 @@ class PGRService:
                 filestore_uploads=filestore_uploads
             )
 
+            logger.info(payload)
+
             response = requests.post(
                 url=url,
                 params=params,
@@ -160,6 +178,7 @@ class PGRService:
             return response.json()
 
         except Exception as e:
+            logger.error(e)
             logger.error(f"Status: {response.status_code}")
             logger.error(f"Response: {response.text}")
             raise

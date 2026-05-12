@@ -11,7 +11,7 @@ class ServiceCodesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DigitComplaintTypes
-        fields = ["facility_id", "workflow", "service_codes"]
+        fields = ["facility_id", "workflow", "service_codes", "tenant_id"]
 
 
 class DigitComplaintTypesCreateSerializer(serializers.ModelSerializer):
