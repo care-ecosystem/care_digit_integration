@@ -1,39 +1,42 @@
-from rest_framework.authentication import (
-    BaseAuthentication,
-    get_authorization_header,
-    TokenAuthentication,
-    BasicAuthentication,
-)
-from config.patient_otp_authentication import JWTTokenPatientAuthentication
+from rest_framework.authentication import BaseAuthentication, get_authorization_header
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from config.patient_otp_authentication import JWTTokenPatientAuthentication
 
 
 class HybridAuthentication(BaseAuthentication):
     def authenticate(self, request):
         header = get_authorization_header(request)
 
+        # No authorization header provided, no auth attempted.
         if not header:
             return None
 
         parts = header.split()
 
         if len(parts) != 2:
-            return AuthenticationFailed("Invalid Authorization header format")
+            raise AuthenticationFailed("Invalid Authorization header format")
 
         prefix = parts[0].lower()
 
-        try:
-            if prefix == b"bearer":
-                return JWTTokenPatientAuthentication().authenticate(request)
+        if prefix == b"bearer":
+            try:
+                user_auth = JWTTokenPatientAuthentication().authenticate(request)
+                if user_auth:
+                    return user_auth
+            except AuthenticationFailed:
+                pass  
 
-            elif prefix == b"token":
-                return TokenAuthentication().authenticate(request)
+            try:
+                jwt_auth = JWTAuthentication()
+                user, token = jwt_auth.authenticate(request)
 
-            elif prefix == b"basic":
-                return BasicAuthentication().authenticate(request)
+                if user.is_staff:
+                    return (user, token)
+                else:
+                    raise AuthenticationFailed("User is not authorized as staff")
+            except AuthenticationFailed:
+                pass 
 
-            else:
-                return AuthenticationFailed("Unsupported authentication type")
-
-        except Exception as e:
-            return AuthenticationFailed(str(e))
+            raise AuthenticationFailed("Invalid or expired token")
+        raise AuthenticationFailed("Unsupported authentication type")
