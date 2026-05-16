@@ -8,13 +8,17 @@ from care.facility.models import Facility
 from care.utils.shortcuts import get_object_or_404
 
 from care_digit_integration.api.services.filestore_service import FileStoreService
-from care_digit_integration.api.authentication import HybridAuthentication
+from care_digit_integration.api.authentication import JWTTokenStaffAuthentication
 from care_digit_integration.models.digit_complaint_types import DigitComplaintTypes
+
+from config.patient_otp_authentication import JWTTokenPatientAuthentication
 
 
 class FileStoreViewSet(GenericViewSet):
-    authentication_classes = [HybridAuthentication]
-    permission_classes = [IsAuthenticated]
+    authentication_classes = [
+        JWTTokenPatientAuthentication,
+        JWTTokenStaffAuthentication
+    ]
 
     @action(detail=False, methods=["post"])
     def upload(self, request):

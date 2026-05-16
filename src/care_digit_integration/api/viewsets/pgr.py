@@ -9,16 +9,21 @@ from care.emr.models import Patient
 from care.facility.models.facility import Facility
 from care.utils.shortcuts import get_object_or_404
 
-from care_digit_integration.api.authentication import HybridAuthentication
+from care_digit_integration.api.authentication import JWTTokenStaffAuthentication
 from care_digit_integration.api.serializers import PGRComplaintsCreateSerializer, PGRComplaintRetrieveSerializer
 from care_digit_integration.api.services.pgr_service import PGRService
 from care_digit_integration.models.pgr_complaints import PGRComplaints
 
+from config.patient_otp_authentication import JWTTokenPatientAuthentication
+
 
 class PGRViewSet(ModelViewSet):
+    authentication_classes = [
+        JWTTokenPatientAuthentication,
+        JWTTokenStaffAuthentication
+    ]
+    
     queryset = PGRComplaints.objects.all()
-    authentication_classes = [HybridAuthentication]
-    permission_classes = [IsAuthenticated]
     serializer_class = PGRComplaintRetrieveSerializer
 
     def _get_reporter_details(self, request):
