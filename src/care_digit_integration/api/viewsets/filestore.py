@@ -4,29 +4,33 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-# import logging
+from care.facility.models import Facility
+from care.utils.shortcuts import get_object_or_404
 
-from care_digit_integration.settings import plugin_settings as settings
 from care_digit_integration.api.services.filestore_service import FileStoreService
-from rest_framework.permissions import IsAuthenticated
 from care_digit_integration.api.authentication import HybridAuthentication
-
-
-# logger = logging.getLogger(__name__)
+from care_digit_integration.models.digit_complaint_types import DigitComplaintTypes
 
 
 class FileStoreViewSet(GenericViewSet):
-    authentication_classes = [
-        HybridAuthentication,
-    ]
-
+    authentication_classes = [HybridAuthentication]
     permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=["post"])
     def upload(self, request):
-        # logger.info("Modified\nInitiating file upload...")
         files = request.FILES
-        tenant_id = settings.USER_INFO["TENANT_ID"]
+        facility_id = request.data.get("facility_id")
+        workflow = request.data.get("workflow")
+
+        facility = get_object_or_404(Facility, external_id=facility_id)
+
+        digit_complaint_type = get_object_or_404(
+            DigitComplaintTypes,
+            facility=facility,
+            workflow=workflow
+        )
+
+        tenant_id = digit_complaint_type.tenant_id
 
         try:
             filestore_service = FileStoreService()
@@ -35,12 +39,9 @@ class FileStoreViewSet(GenericViewSet):
                 tenant_id=tenant_id
             )
 
-            # logger.info(f"File upload successful: {response}")
-
             return Response(response, status=status.HTTP_200_OK)
 
         except Exception as e:
-            # logger.error(f"File upload failed: {str(e)}")
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

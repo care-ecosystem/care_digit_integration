@@ -5,28 +5,21 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
 from rest_framework.exceptions import ValidationError, NotFound
 
+from care.emr.models import Patient
 from care.facility.models.facility import Facility
 from care.utils.shortcuts import get_object_or_404
-from care.emr.models import Patient
 
-from care_digit_integration.api.serializers import PGRComplaintsCreateSerializer, PGRComplaintRetrieveSerializer
-from care_digit_integration.models.pgr_complaints import PGRComplaints
-from care_digit_integration.api.services.pgr_service import PGRService
 from care_digit_integration.api.authentication import HybridAuthentication
+from care_digit_integration.api.serializers import PGRComplaintsCreateSerializer, PGRComplaintRetrieveSerializer
+from care_digit_integration.api.services.pgr_service import PGRService
+from care_digit_integration.models.pgr_complaints import PGRComplaints
+
 
 class PGRViewSet(ModelViewSet):
     queryset = PGRComplaints.objects.all()
-    authentication_classes = [
-        HybridAuthentication,
-    ]
-
+    authentication_classes = [HybridAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = PGRComplaintRetrieveSerializer
-    # def get_queryset(self):
-    #     return PGRComplaints.objects.filter(
-    #         workflow="system",
-    #         reporter=self.request.user
-    #     ).order_by("-created_date")
 
     def _get_reporter_details(self, request):
         user = request.user
@@ -70,6 +63,7 @@ class PGRViewSet(ModelViewSet):
 
         raise ValidationError("Unable to determine reporter")
 
+
     def get_queryset(self):
         try:
             reporter_data = self._get_reporter_details(self.request)
@@ -83,21 +77,24 @@ class PGRViewSet(ModelViewSet):
         except (ValidationError, NotFound):
             return PGRComplaints.objects.none()
 
+
     def create(self, request, *args, **kwargs):
         data = request.data
+
         reporter_data = self._get_reporter_details(request)
         reporter = reporter_data["reporter"]
         reporter_type = reporter_data["reporter_type"]
 
         facility_id = data.get("facility")
         facility = get_object_or_404(Facility, external_id=facility_id)
+
         workflow = data.get("workflow")
         service_code = data.get("service_code")
         app_context = data.get("app_context")
-
         description = data.get("description")
         filestore_uploads = data.get("filestore_uploads", [])
         source = data.get("source")
+
         serializer = PGRComplaintsCreateSerializer(data={
             "facility": facility.id,
             "app_context": app_context,
@@ -127,14 +124,13 @@ class PGRViewSet(ModelViewSet):
 
             wrappers = response.get("ServiceWrappers") or []
             service = wrappers[0].get("service") if wrappers else {}
-
             instance.pgr_status = service.get("applicationStatus")
             instance.pgr_ticket_id = service.get("serviceRequestId")
 
         except Exception as e:
             instance.pgr_status = PGRComplaints.PGRStatusTypes.SYNC_FAILED
             return Response(
-                {"detail": "Failed to sync complaint with PGR system"},
+                {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -149,12 +145,13 @@ class PGRViewSet(ModelViewSet):
     @action(detail=True, methods=["get"])
     def check_status(self, request, *args, **kwargs):
         instance = get_object_or_404(
-            PGRComplaints, pgr_ticket_id=kwargs.get("pk"))
+            PGRComplaints,
+            pgr_ticket_id=kwargs.get("pk")
+        )
 
         pgr_service = PGRService()
 
         try:
-
             response = pgr_service.fetch_complaint(
                 pgr_ticket_id=kwargs.get('pk'),
                 facility_id=instance.facility.external_id,
@@ -163,8 +160,7 @@ class PGRViewSet(ModelViewSet):
             return Response(response)
 
         except Exception as e:
-
             return Response(
-                {"detail": "Failed to fetch complaint status from PGR system"},
+                {"error": str(e)},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )

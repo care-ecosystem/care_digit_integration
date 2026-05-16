@@ -1,12 +1,10 @@
 from urllib.parse import urljoin
 import logging
+import requests
 import time
 
-import requests
-
-from care.utils.shortcuts import get_object_or_404
 from care.facility.models import Facility
-
+from care.utils.shortcuts import get_object_or_404
 
 from care_digit_integration.api.services.token_service import TokenService
 from care_digit_integration.models.digit_complaint_types import DigitComplaintTypes
@@ -23,7 +21,6 @@ class PGRService:
 
     def _get_tenant_id(self, facility_id, workflow):
         facility = get_object_or_404(Facility, external_id=facility_id)
-
         digit_complaint_type = get_object_or_404(
             DigitComplaintTypes,
             facility=facility,
@@ -31,7 +28,6 @@ class PGRService:
         )
 
         return digit_complaint_type.tenant_id
-
 
 
     def _build_create_payload(
@@ -43,26 +39,25 @@ class PGRService:
         source=None
     ):
         access_token = self.token_service.get_token(tenant_id=tenant_id)
-        # user_info = settings.USER_INFO
         user_info = self.token_service.get_user_info(tenant_id=tenant_id)
+
         timestamp = int(time.time())
 
         audit_details = {
-            # "createdBy": user_info["UUID"],
             "createdBy": user_info["uuid"],
             "createdTime": timestamp,
-            # "lastModifiedBy": user_info["UUID"],
             "lastModifiedBy": user_info["uuid"],
             "lastModifiedTime": timestamp
         }
 
-        verfication_documents = []
-        for upload in filestore_uploads:
-            verfication_documents.append({
+        verfication_documents = [
+            {
                 "fileStoreId": upload["fileStoreId"],
                 "tenantId": upload["tenantId"],
                 "auditDetails": audit_details
-            })
+            }
+            for upload in filestore_uploads
+        ]
 
         payload = {
             "service": {
@@ -73,25 +68,15 @@ class PGRService:
                 "applicationStatus": settings.PGR_CREATE_APPLICATION_STATUS,
                 "source": source or "web",
                 "user": {
-                    # "userName": user_info["USER_NAME"],
                     "userName": user_info["userName"],
-                    # "name": user_info["NAME"],
                     "name": user_info["name"],
-                    # "type": user_info["TYPE"],
                     "type": user_info["type"],
-                    # "mobileNumber": user_info["MOBILE_NUMBER"],
                     "mobileNumber": user_info["mobileNumber"],
-                    # "roles": user_info["ROLES"],
                     "roles": user_info["roles"],
-                    # "tenantId": user_info["TENANT_ID"],
                     "tenantId": user_info["tenantId"],
-                    # "uuid": user_info["UUID"],
                     "uuid": user_info["uuid"],
-                    # "active": user_info["ACTIVE"],
                     "active": user_info["active"],
-                    # "isDeleted": user_info["IS_DELETED"],
                     "isDeleted": False,
-                    # "rowVersion": user_info["ROW_VERSION"],
                     "rowVersion": 1,
                     "auditDetails": audit_details
                 },
@@ -108,15 +93,12 @@ class PGRService:
                     "geoLocation": {}
                 },
                 "additionalDetail": {
-                    # "supervisorName": user_info["NAME"],
                     "supervisorName": user_info["name"],
-                    # "supervisorMobileNumber": ""
                     "supervisorMobileNumber": user_info["mobileNumber"]
                 },
                 "auditDetails": audit_details
             },
             "workflow": {
-                # "action": "CREATE",
                 "action": "APPLY",
                 "assignes": [],
                 "hrmsAssignes": [],
@@ -130,8 +112,6 @@ class PGRService:
         }
 
         return payload
-
-
 
 
     def create_complaint(
@@ -163,8 +143,6 @@ class PGRService:
                 filestore_uploads=filestore_uploads
             )
 
-            logger.info(payload)
-
             response = requests.post(
                 url=url,
                 params=params,
@@ -178,12 +156,8 @@ class PGRService:
             return response.json()
 
         except Exception as e:
-            logger.error(e)
-            logger.error(f"Status: {response.status_code}")
-            logger.error(f"Response: {response.text}")
-            raise
-
-
+            logger.error(response.text)
+            raise e
 
 
     def fetch_complaint(self, *, pgr_ticket_id, facility_id, workflow):
@@ -224,6 +198,5 @@ class PGRService:
             return response.json()
 
         except Exception as e:
-            logger.error(f"Status: {response.status_code}")
-            logger.error(f"Response: {response.text}")
-            raise
+            logger.error(response.text)
+            raise e
