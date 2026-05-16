@@ -50,7 +50,7 @@ class PGRService:
             "lastModifiedTime": timestamp
         }
 
-        verfication_documents = [
+        verification_documents = [
             {
                 "fileStoreId": upload["fileStoreId"],
                 "tenantId": upload["tenantId"],
@@ -103,7 +103,7 @@ class PGRService:
                 "assignes": [],
                 "hrmsAssignes": [],
                 "comments": "",
-                "verificationDocuments": verfication_documents
+                "verificationDocuments": verification_documents
             },
             "RequestInfo": {
                 "apiId": "Rainmaker",
