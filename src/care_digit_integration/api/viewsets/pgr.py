@@ -1,11 +1,10 @@
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
 from rest_framework.exceptions import ValidationError, NotFound
 
-from care.emr.models import Patient
+from care.emr.models import Patient, User
 from care.facility.models.facility import Facility
 from care.utils.shortcuts import get_object_or_404
 
@@ -14,7 +13,7 @@ from care_digit_integration.api.serializers import PGRComplaintsCreateSerializer
 from care_digit_integration.api.services.pgr_service import PGRService
 from care_digit_integration.models.pgr_complaints import PGRComplaints
 
-from config.patient_otp_authentication import JWTTokenPatientAuthentication
+from config.patient_otp_authentication import JWTTokenPatientAuthentication, PatientOtpObject
 
 
 class PGRViewSet(ModelViewSet):
@@ -22,45 +21,39 @@ class PGRViewSet(ModelViewSet):
         JWTTokenPatientAuthentication,
         JWTTokenStaffAuthentication
     ]
-    
+
     queryset = PGRComplaints.objects.all()
     serializer_class = PGRComplaintRetrieveSerializer
 
     def _get_reporter_details(self, request):
         user = request.user
 
-        # STAFF
-        if getattr(user, "external_id", None):
+        if isinstance(user, User):
             return {
                 "reporter": user.external_id,
                 "reporter_type": "staff",
             }
 
-        if getattr(user, "phone_number", None):
+        if isinstance(user, PatientOtpObject):
+            patient_id = request.query_params.get("patient_id")
             patients = Patient.objects.filter(phone_number=user.phone_number)
 
             if not patients.exists():
                 raise NotFound("Patient not found")
 
-            if patients.count() == 1:
-                patient = patients.first()
+            if patient_id:
+                patient = get_object_or_404(Patient, external_id=patient_id, phone_number=user.phone_number)
                 return {
                     "reporter": patient.external_id,
                     "reporter_type": "patient",
                 }
 
-            patient_external_id = request.query_params.get("patient")
-
-            if not patient_external_id:
+            if patients.count() > 1:
                 raise ValidationError(
-                    "Multiple patients found for this phone number. Please provide 'patient' (external_id)."
+                    "Multiple patients found for this phone number. Please provide 'patient_id' to identify the patient."
                 )
 
-            try:
-                patient = patients.get(external_id=patient_external_id)
-            except Patient.DoesNotExist:
-                raise ValidationError("Invalid patient external_id")
-
+            patient = patients.first()
             return {
                 "reporter": patient.external_id,
                 "reporter_type": "patient",
@@ -70,17 +63,13 @@ class PGRViewSet(ModelViewSet):
 
 
     def get_queryset(self):
-        try:
-            reporter_data = self._get_reporter_details(self.request)
-            reporter = reporter_data["reporter"]
+        reporter_data = self._get_reporter_details(self.request)
+        reporter = reporter_data["reporter"]
 
-            return (
-                PGRComplaints.objects.filter(reporter=reporter)
-                .order_by("-created_date", "-id")
-            )
-
-        except (ValidationError, NotFound):
-            return PGRComplaints.objects.none()
+        return (
+            PGRComplaints.objects.filter(reporter=reporter)
+            .order_by("-created_date", "-id")
+        )
 
 
     def create(self, request, *args, **kwargs):
