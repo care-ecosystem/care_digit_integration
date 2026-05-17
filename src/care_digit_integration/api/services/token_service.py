@@ -36,6 +36,7 @@ class TokenService:
 
 
     def _fetch_token(self, tenant_id):
+        response = None
         try:
             url = urljoin(settings.HOST, settings.DIGIT_TOKEN_ENDPOINT)
 
@@ -65,9 +66,20 @@ class TokenService:
 
             return response.json()
 
-        except Exception as e:
-            logger.error(response.text)
-            raise e
+        except requests.RequestException:
+            logger.exception("Token fetch failed")
+
+            if response is not None:
+                logger.error(
+                    "Status code: %s",
+                    response.status_code,
+                )
+                logger.error(
+                    "Response body: %s",
+                    response.text,
+                )
+
+            raise
 
 
     def get_token(self, tenant_id):
@@ -89,8 +101,7 @@ class TokenService:
                 )
 
                 return response.get("access_token")
-            except Exception as e:
-                logger.error(e)
+
             finally:
                 cache.delete(lock_key)
 

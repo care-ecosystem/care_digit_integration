@@ -123,6 +123,7 @@ class PGRService:
         filestore_uploads=[],
         source=None
     ):
+        response = None
         try:
             tenant_id = self._get_tenant_id(facility_id, workflow)
 
@@ -155,12 +156,24 @@ class PGRService:
 
             return response.json()
 
-        except Exception as e:
-            logger.error(response.text)
-            raise e
+        except requests.RequestException:
+            logger.exception("Complaint creation failed")
+
+            if response is not None:
+                logger.error(
+                    "Status code: %s",
+                    response.status_code,
+                )
+                logger.error(
+                    "Response body: %s",
+                    response.text,
+                )
+
+            raise
 
 
     def fetch_complaint(self, *, pgr_ticket_id, facility_id, workflow):
+        response = None
         try:
             tenant_id = self._get_tenant_id(facility_id, workflow)
 
@@ -197,6 +210,17 @@ class PGRService:
 
             return response.json()
 
-        except Exception as e:
-            logger.error(response.text)
-            raise e
+        except requests.RequestException:
+            logger.exception("Complaint fetch failed")
+
+            if response is not None:
+                logger.error(
+                    "Status code: %s",
+                    response.status_code,
+                )
+                logger.error(
+                    "Response body: %s",
+                    response.text,
+                )
+
+            raise
