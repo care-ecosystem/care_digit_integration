@@ -1,29 +1,23 @@
-from urllib3 import request
-
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from care.facility.models.facility import Facility
 from care.utils.shortcuts import get_object_or_404
 
+from care_digit_integration.api.authentication import JWTTokenStaffAuthentication
 from care_digit_integration.api.serializers import ServiceCodesSerializer, DigitComplaintTypesCreateSerializer
 from care_digit_integration.models.digit_complaint_types import DigitComplaintTypes
-from rest_framework.permissions import IsAuthenticated
 
-# )
-from care_digit_integration.api.authentication import HybridAuthentication
+from config.patient_otp_authentication import JWTTokenPatientAuthentication
 
 
 class InternalViewSet(GenericViewSet):
-
     authentication_classes = [
-        HybridAuthentication,
+        JWTTokenPatientAuthentication,
+        JWTTokenStaffAuthentication
     ]
-
-    permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=["get", "post"], url_path="service-codes")
     def service_codes(self, request):

@@ -1,20 +1,19 @@
-from django.core.cache import cache
-
+from urllib.parse import urlencode, urljoin
+import logging
 import requests
 import time
-from urllib.parse import urlencode, urljoin
+
+from django.core.cache import cache
 
 from care_digit_integration.settings import plugin_settings as settings
 
-import logging
+
 logger = logging.getLogger(__name__)
 
 
 class TokenService:
-
     def _get_cache_key(self, tenant_id):
         return f"digit:access_token:{tenant_id}"
-
 
 
     def _cache_data(self, cache_key, token_response):
@@ -36,8 +35,8 @@ class TokenService:
         )
 
 
-
     def _fetch_token(self, tenant_id):
+        response = None
         try:
             url = urljoin(settings.HOST, settings.DIGIT_TOKEN_ENDPOINT)
 
@@ -63,48 +62,49 @@ class TokenService:
                 timeout=settings.REQUEST_TIMEOUT
             )
 
+            response.raise_for_status()
+
             return response.json()
 
-        except Exception as e:
-            logger.error(e)
-            logger.error(response.status)
-            logger.error(response.text)
+        except requests.RequestException:
+            logger.exception("Token fetch failed")
 
-            raise e
+            if response is not None:
+                logger.error(
+                    "Status code: %s",
+                    response.status_code,
+                )
+                logger.error(
+                    "Response body: %s",
+                    response.text,
+                )
+
+            raise
 
 
     def get_token(self, tenant_id):
-        logger.info("Inside get_token()")
         cache_key = self._get_cache_key(tenant_id)
-
         data = cache.get(cache_key)
+
         if data:
-            logger.info("Data exists")
-            logger.info(data)
             return data.get("access_token")
 
         lock_key = f"lock:{cache_key}"
 
         if cache.add(lock_key, "1", timeout=settings.REQUEST_TIMEOUT):
             try:
-                logger.info("Inside lock")
                 response = self._fetch_token(tenant_id)
-                logger.info(response)
 
                 self._cache_data(
                     cache_key=cache_key,
                     token_response=response
                 )
 
-
                 return response.get("access_token")
-            except Exception as e:
-                logger.error(e)
+
             finally:
                 cache.delete(lock_key)
 
-
-        logger.info("Outside lock")
         for _ in range(5):
             data = cache.get(cache_key)
             if data:
@@ -112,7 +112,6 @@ class TokenService:
             time.sleep(0.2)
 
         response = self._fetch_token(tenant_id)
-        logger.info(response)
 
         self._cache_data(
             cache_key=cache_key,
@@ -120,7 +119,6 @@ class TokenService:
         )
 
         return response.get("access_token")
-
 
 
     def get_user_info(self, tenant_id):

@@ -15,6 +15,7 @@ class FileStoreService:
 
 
     def upload_files(self, *, files, tenant_id):
+        response = None
         try:
             url = urljoin(settings.HOST, settings.FILESTORE_UPLOAD_ENDPOINT)
 
@@ -48,7 +49,17 @@ class FileStoreService:
 
             return response.json()
 
-        except Exception as e:
-            logger.error(f"Status: {response.status_code}")
-            logger.error(f"Response: {response.text}")
+        except requests.RequestException:
+            logger.exception("File upload failed")
+
+            if response is not None:
+                logger.error(
+                    "Status code: %s",
+                    response.status_code,
+                )
+                logger.error(
+                    "Response body: %s",
+                    response.text,
+                )
+
             raise

@@ -1,39 +1,17 @@
-from rest_framework.authentication import (
-    BaseAuthentication,
-    get_authorization_header,
-    TokenAuthentication,
-    BasicAuthentication,
-)
-from config.patient_otp_authentication import JWTTokenPatientAuthentication
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
-class HybridAuthentication(BaseAuthentication):
+class JWTTokenStaffAuthentication(JWTAuthentication):
     def authenticate(self, request):
-        header = get_authorization_header(request)
-
-        if not header:
+        auth_result = super().authenticate(request)
+        
+        if auth_result is None:
             return None
 
-        parts = header.split()
+        user, _ = auth_result
 
-        if len(parts) != 2:
-            return AuthenticationFailed("Invalid Authorization header format")
+        if not user.is_staff:
+            raise AuthenticationFailed("User is not a staff")
 
-        prefix = parts[0].lower()
-
-        try:
-            if prefix == b"bearer":
-                return JWTTokenPatientAuthentication().authenticate(request)
-
-            elif prefix == b"token":
-                return TokenAuthentication().authenticate(request)
-
-            elif prefix == b"basic":
-                return BasicAuthentication().authenticate(request)
-
-            else:
-                return AuthenticationFailed("Unsupported authentication type")
-
-        except Exception as e:
-            return AuthenticationFailed(str(e))
+        return auth_result

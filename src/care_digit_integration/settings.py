@@ -1,14 +1,14 @@
 from typing import Any
-
 import environ
+
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.signals import setting_changed
 from django.dispatch import receiver
+
 from rest_framework.settings import perform_import
 
 from care_digit_integration.apps import PLUGIN_NAME
-from django.conf import settings
 
 
 env = environ.Env()
@@ -107,7 +107,6 @@ REQUIRED_SETTINGS = {
     "FILESTORE_UPLOAD_ENDPOINT",
     "GRANT_TYPE",
     "LOCALITY_CODE",
-    # "USER_INFO",
     "MODULE_NAME"
 }
 
@@ -119,7 +118,6 @@ DEFAULTS = {
     "PGR_FETCH_ENDPOINT": "",
     "FILESTORE_UPLOAD_ENDPOINT": "",
     "GRANT_TYPE": "password",
-    # "USER_TYPE": "EMPLOYEE",
     "USER_TYPE": "CITIZEN",
     "TOKEN_EXPIRY": 3600,
     "REQUEST_TIMEOUT": 10,
