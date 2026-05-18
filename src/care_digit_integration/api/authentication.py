@@ -19,24 +19,25 @@ class HybridAuthentication(BaseAuthentication):
 
         prefix = parts[0].lower()
 
-        if prefix == b"bearer":
-            try:
-                user_auth = JWTTokenPatientAuthentication().authenticate(request)
-                if user_auth:
-                    return user_auth
-            except AuthenticationFailed:
-                pass  
+        if prefix != b"bearer":
+            raise AuthenticationFailed("Unsupported authentication type.")
 
-            try:
-                jwt_auth = JWTAuthentication()
-                user, token = jwt_auth.authenticate(request)
+        try:
+            user_auth = JWTTokenPatientAuthentication().authenticate(request)
+            if user_auth:
+                return user_auth
+        except AuthenticationFailed:
+            pass  
 
-                if user.is_staff:
-                    return (user, token)
-                else:
-                    raise AuthenticationFailed("User is not authorized as staff")
-            except AuthenticationFailed:
-                pass 
+        try:
+            jwt_auth = JWTAuthentication()
+            user, token = jwt_auth.authenticate(request)
 
-            raise AuthenticationFailed("Invalid or expired token")
-        raise AuthenticationFailed("Unsupported authentication type")
+            if user.is_staff:
+                return (user, token)
+            else:
+                raise AuthenticationFailed("User is not authorized as staff")
+        except AuthenticationFailed:
+            pass 
+
+        raise AuthenticationFailed("Invalid or expired token")
