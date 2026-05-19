@@ -3,12 +3,13 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
 from rest_framework.exceptions import ValidationError, NotFound
+from rest_framework.permissions import AllowAny
 
 from care.emr.models import Patient, User
 from care.facility.models.facility import Facility
 from care.utils.shortcuts import get_object_or_404
 
-from care_digit_integration.api.authentication import JWTTokenStaffAuthentication
+from care_digit_integration.api.authentication import EncounterBasedAuthentication, JWTTokenStaffAuthentication
 from care_digit_integration.api.serializers import PGRComplaintsCreateSerializer, PGRComplaintRetrieveSerializer
 from care_digit_integration.api.services.pgr_service import PGRService
 from care_digit_integration.models.pgr_complaints import PGRComplaints
@@ -18,9 +19,12 @@ from config.patient_otp_authentication import JWTTokenPatientAuthentication, Pat
 
 class PGRViewSet(ModelViewSet):
     authentication_classes = [
+        EncounterBasedAuthentication,
         JWTTokenPatientAuthentication,
         JWTTokenStaffAuthentication
     ]
+
+    permission_classes = [AllowAny]
 
     queryset = PGRComplaints.objects.all()
     serializer_class = PGRComplaintRetrieveSerializer
@@ -28,14 +32,22 @@ class PGRViewSet(ModelViewSet):
     def _get_reporter_details(self, request):
         user = request.user
 
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"User type: {type(user)}, User details: {user.__dict__}")
+
+
         if isinstance(user, User):
             return {
                 "reporter": user.external_id,
                 "reporter_type": "staff",
             }
 
-        if isinstance(user, PatientOtpObject):
-            patient_id = request.query_params.get("patient_id")
+        if isinstance(user, PatientOtpObject) or isinstance(user, Patient):
+
+            data = request.data if request.method == "POST" else request.query_params
+            patient_id = data.get("patient_id")
+
             patients = Patient.objects.filter(phone_number=user.phone_number)
 
             if not patients.exists():

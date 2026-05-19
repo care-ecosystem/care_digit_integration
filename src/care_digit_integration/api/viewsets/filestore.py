@@ -2,12 +2,13 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
+from rest_framework.permissions import AllowAny
 
 from care.facility.models import Facility
 from care.utils.shortcuts import get_object_or_404
 
 from care_digit_integration.api.services.filestore_service import FileStoreService
-from care_digit_integration.api.authentication import JWTTokenStaffAuthentication
+from care_digit_integration.api.authentication import EncounterBasedAuthentication, JWTTokenStaffAuthentication
 from care_digit_integration.models.digit_complaint_types import DigitComplaintTypes
 
 from config.patient_otp_authentication import JWTTokenPatientAuthentication
@@ -15,9 +16,12 @@ from config.patient_otp_authentication import JWTTokenPatientAuthentication
 
 class FileStoreViewSet(GenericViewSet):
     authentication_classes = [
+        EncounterBasedAuthentication,
         JWTTokenPatientAuthentication,
         JWTTokenStaffAuthentication
     ]
+
+    permission_classes = [AllowAny]
 
     @action(detail=False, methods=["post"])
     def upload(self, request):
