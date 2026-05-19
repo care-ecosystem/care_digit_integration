@@ -36,7 +36,8 @@ class PGRService:
         service_code,
         description,
         filestore_uploads=[],
-        source=None
+        source=None,
+        mobile_number=None
     ):
         access_token = self.token_service.get_token(tenant_id=tenant_id)
         user_info = self.token_service.get_user_info(tenant_id=tenant_id)
@@ -71,7 +72,8 @@ class PGRService:
                     "userName": user_info["userName"],
                     "name": user_info["name"],
                     "type": user_info["type"],
-                    "mobileNumber": user_info["mobileNumber"],
+                    # "mobileNumber": user_info["mobileNumber"],
+                    "mobileNumber": mobile_number or user_info["mobileNumber"],
                     "roles": user_info["roles"],
                     "tenantId": user_info["tenantId"],
                     "uuid": user_info["uuid"],
@@ -95,6 +97,7 @@ class PGRService:
                 "additionalDetail": {
                     "supervisorName": user_info["name"],
                     "supervisorMobileNumber": user_info["mobileNumber"]
+                    # "supervisorMobileNumber": mobile_number or user_info["mobileNumber"]
                 },
                 "auditDetails": audit_details
             },
@@ -121,7 +124,8 @@ class PGRService:
         service_code,
         description,
         filestore_uploads=[],
-        source=None
+        source=None,
+        mobile_number=None
     ):
         response = None
         try:
@@ -141,7 +145,8 @@ class PGRService:
                 service_code=service_code,
                 description=description,
                 source=source,
-                filestore_uploads=filestore_uploads
+                filestore_uploads=filestore_uploads,
+                mobile_number=mobile_number
             )
 
             response = requests.post(
