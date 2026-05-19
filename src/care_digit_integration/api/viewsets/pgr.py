@@ -16,6 +16,8 @@ from care_digit_integration.models.pgr_complaints import PGRComplaints
 
 from config.patient_otp_authentication import JWTTokenPatientAuthentication, PatientOtpObject
 
+import logging
+logger = logging.getLogger(__name__)
 
 class PGRViewSet(ModelViewSet):
     authentication_classes = [
@@ -31,11 +33,6 @@ class PGRViewSet(ModelViewSet):
 
     def _get_reporter_details(self, request):
         user = request.user
-
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info(f"User type: {type(user)}, User details: {user.__dict__}")
-
 
         if isinstance(user, User):
             return {
@@ -140,10 +137,10 @@ class PGRViewSet(ModelViewSet):
 
         except Exception as e:
             instance.pgr_status = PGRComplaints.PGRStatusTypes.SYNC_FAILED
+            logger.exception("Error creating complaint in PGR: %s", e)
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                logger.exception("Error creating complaint in PGR: %s", e) 
             )
 
         finally:

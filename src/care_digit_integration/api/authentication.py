@@ -21,12 +21,7 @@ class JWTTokenStaffAuthentication(JWTAuthentication):
 
 class EncounterBasedAuthentication(BaseAuthentication):
     def authenticate(self, request):
-        import logging
-        logger = logging.getLogger(__name__)
-
         data = request.data if request.method == "POST" else request.query_params
-
-        logger.info(f"EncounterBasedAuthentication data: {data}")
 
         auth_type = data.get("auth_type")
         if auth_type != "encounter_based":
