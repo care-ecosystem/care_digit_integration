@@ -41,6 +41,7 @@ class PGRViewSet(ModelViewSet):
             return {
                 "reporter": user.external_id,
                 "reporter_type": "staff",
+                "mobile_number": user.phone_number
             }
 
         if isinstance(user, PatientOtpObject) or isinstance(user, Patient):
@@ -58,6 +59,7 @@ class PGRViewSet(ModelViewSet):
                 return {
                     "reporter": patient.external_id,
                     "reporter_type": "patient",
+                    "mobile_number": patient.phone_number
                 }
 
             if patients.count() > 1:
@@ -69,6 +71,7 @@ class PGRViewSet(ModelViewSet):
             return {
                 "reporter": patient.external_id,
                 "reporter_type": "patient",
+                "mobile_number": patient.phone_number
             }
 
         raise ValidationError("Unable to determine reporter")
@@ -90,6 +93,7 @@ class PGRViewSet(ModelViewSet):
         reporter_data = self._get_reporter_details(request)
         reporter = reporter_data["reporter"]
         reporter_type = reporter_data["reporter_type"]
+        mobile_number = reporter_data["mobile_number"]
 
         facility_id = data.get("facility")
         facility = get_object_or_404(Facility, external_id=facility_id)
@@ -123,7 +127,8 @@ class PGRViewSet(ModelViewSet):
                 service_code=service_code,
                 description=description,
                 filestore_uploads=filestore_uploads,
-                source=source
+                source=source,
+                mobile_number=mobile_number
             )
 
             instance.pgr_response = response
@@ -138,6 +143,7 @@ class PGRViewSet(ModelViewSet):
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                logger.exception("Error creating complaint in PGR: %s", e) 
             )
 
         finally:
